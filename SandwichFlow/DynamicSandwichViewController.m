@@ -10,7 +10,7 @@
 #import "SandwichViewController.h"
 #import "AppDelegate.h"
 
-@interface DynamicSandwichViewController ()
+@interface DynamicSandwichViewController ()<UICollisionBehaviorDelegate>
 
 @end
 
@@ -20,6 +20,8 @@
     UIDynamicAnimator *_animator;
     CGPoint _previousTouchPoint;
     BOOL _draggingView;
+    UISnapBehavior *_snap;
+    BOOL _viewDocked;
 }
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -94,6 +96,12 @@
     CGPoint boundaryEnd = CGPointMake(self.view.bounds.size.width, boundary);
     [collision addBoundaryWithIdentifier:@1 fromPoint:boundaryStart toPoint:boundaryEnd];
     
+    boundaryStart = CGPointMake(0.0, 0.0);
+    boundaryEnd = CGPointMake(self.view.bounds.size.width, 0.0);
+    [collision addBoundaryWithIdentifier:@2 fromPoint:boundaryStart toPoint:boundaryEnd];
+    collision.collisionDelegate = self;
+    
+    
     // 7. apply some gravity
     [_gravity addItem:view];
     
@@ -119,6 +127,7 @@
         gesture.view.center = CGPointMake(draggedView.center.x, draggedView.center.y - yOffset);
         _previousTouchPoint = touchPoint;
     } else if (gesture.state == UIGestureRecognizerStateEnded && _draggingView) {
+        [self tryDockView:draggedView];
         [self addVelocityToView:draggedView fromGesture:gesture];
         [_animator updateItemUsingCurrentState:draggedView];
         _draggingView = NO;
@@ -133,7 +142,6 @@
         }
     }
     return nil;
-
 }
 
 - (void)addVelocityToView:(UIView *)view fromGesture:gesture
@@ -142,6 +150,45 @@
     vel.x = 0;
     UIDynamicItemBehavior *behaviour = [self itemBehaviourForView:view];
     [behaviour addLinearVelocity:vel forItem:view];
+}
+
+- (void)tryDockView:(UIView *)view
+{
+    BOOL viewHasReachedDockLocation = view.frame.origin.y < 100.0;
+    if (viewHasReachedDockLocation) {
+        if (!_viewDocked) {
+            _snap = [[UISnapBehavior alloc] initWithItem:view snapToPoint:self.view.center];
+            [_animator addBehavior:_snap];
+            [self setAlphaWhenViewDocked:view alpha:0.0];
+            _viewDocked = YES;
+        }
+    } else {
+        if (_viewDocked) {
+            [_animator removeBehavior:_snap];
+            [self setAlphaWhenViewDocked:view alpha:1.0];
+            _viewDocked = NO;
+        }
+    }
+}
+
+- (void)setAlphaWhenViewDocked:(UIView *)view alpha:(CGFloat)alpha
+{
+    for (UIView *aView in _views) {
+        if (aView != view) {
+            aView.alpha = alpha;
+        }
+    }
+}
+
+- (void)collisionBehavior:(UICollisionBehavior *)behavior
+      beganContactForItem:(id<UIDynamicItem>)item
+   withBoundaryIdentifier:(id<NSCopying>)identifier
+                  atPoint:(CGPoint)p
+{
+    if ([@2 isEqual:identifier]) {
+        UIView *view = (UIView *)item;
+        [self tryDockView:view];
+    }
 }
 
 - (void)didReceiveMemoryWarning
