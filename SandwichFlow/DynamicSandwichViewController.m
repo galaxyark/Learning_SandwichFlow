@@ -97,6 +97,9 @@
     // 7. apply some gravity
     [_gravity addItem:view];
     
+    UIDynamicItemBehavior *itemBehavior = [[UIDynamicItemBehavior alloc] initWithItems:@[view]];
+    [_animator addBehavior:itemBehavior];
+    
     return view;
 }
 
@@ -116,9 +119,29 @@
         gesture.view.center = CGPointMake(draggedView.center.x, draggedView.center.y - yOffset);
         _previousTouchPoint = touchPoint;
     } else if (gesture.state == UIGestureRecognizerStateEnded && _draggingView) {
+        [self addVelocityToView:draggedView fromGesture:gesture];
         [_animator updateItemUsingCurrentState:draggedView];
         _draggingView = NO;
     }
+}
+
+- (UIDynamicItemBehavior *)itemBehaviourForView:(UIView *)view
+{
+    for (UIDynamicItemBehavior *behaviour in _animator.behaviors) {
+        if (behaviour.class == [UIDynamicItemBehavior class] && [behaviour.items firstObject] == view) {
+            return behaviour;
+        }
+    }
+    return nil;
+
+}
+
+- (void)addVelocityToView:(UIView *)view fromGesture:gesture
+{
+    CGPoint vel = [gesture velocityInView:self.view];
+    vel.x = 0;
+    UIDynamicItemBehavior *behaviour = [self itemBehaviourForView:view];
+    [behaviour addLinearVelocity:vel forItem:view];
 }
 
 - (void)didReceiveMemoryWarning
