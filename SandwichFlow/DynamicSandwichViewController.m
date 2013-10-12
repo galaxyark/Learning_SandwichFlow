@@ -36,14 +36,30 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    // Background image
-    UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Background-LowerLayer.png"]];
-    [self.view addSubview:backgroundImageView];
+//    // Background image
+//    UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Background-LowerLayer.png"]];
+//    [self.view addSubview:backgroundImageView];
+//    
+//    //header logo
+//    UIImageView* header = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Sarnie.png"]];
+//    header.center = CGPointMake(220, 190);
+//    [self.view addSubview:header];
     
-    //header logo
-    UIImageView* header = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Sarnie.png"]];
-    header.center = CGPointMake(220, 190);
+    // 1. add the lower background layer
+    UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Background-LowerLayer.png"]];
+    backgroundImageView.frame = CGRectInset(self.view.frame, -20.0f, -20.0f);
+    [self.view addSubview:backgroundImageView];
+    [self addMOtionEffectToView:backgroundImageView magnitude:80.0f];
+    
+    // 2. add the background mid layer
+    UIImageView *backgroundImageView2 = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Background-MidLayer.png" ]];
+    [self.view addSubview:backgroundImageView2];
+    
+    // 3. add the foreground image
+    UIImageView *header = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Sarnie.png"]];
+    header.center = CGPointMake(160, 150);
     [self.view addSubview:header];
+    [self addMOtionEffectToView:header magnitude:-40.0f];
     
     _animator = [[UIDynamicAnimator alloc] initWithReferenceView:self.view];
     _gravity = [[UIGravityBehavior alloc] init];
@@ -56,6 +72,27 @@
         [_views addObject:[self addRecipeAtOffset:offset forSandwich:sandwich]];
         offset -= 50.0f;
     }
+}
+
+- (void)addMOtionEffectToView:(UIView *)view magnitude:(float)magnitude
+{
+    UIInterpolatingMotionEffect *xMotion =
+    [[UIInterpolatingMotionEffect alloc] initWithKeyPath:@"center.x"
+                                                    type:UIInterpolatingMotionEffectTypeTiltAlongHorizontalAxis];
+    xMotion.minimumRelativeValue = @(-magnitude);
+    xMotion.maximumRelativeValue = @(magnitude);
+    
+    UIInterpolatingMotionEffect *yMotion =
+    [[UIInterpolatingMotionEffect alloc] initWithKeyPath:@"center.y"
+                                                    type:UIInterpolatingMotionEffectTypeTiltAlongVerticalAxis];
+    yMotion.minimumRelativeValue = @(-magnitude);
+    yMotion.maximumRelativeValue = @(magnitude);
+    
+    UIMotionEffectGroup *group = [[UIMotionEffectGroup alloc] init];
+    group.motionEffects = @[xMotion, yMotion];
+    
+    [view addMotionEffect:group];
+    
 }
 
 - (NSArray *)sandwiches
